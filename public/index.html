@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Food Recalls — Open Primitive</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0c0a09;
+      --surface: #131110;
+      --surface2: #1a1714;
+      --border: #2a2420;
+      --border2: #3a3028;
+      --accent: #f97316;
+      --accent-dim: #c2570f;
+      --text: #e8e0d8;
+      --text-muted: #8a7e74;
+      --text-dim: #5a504a;
+      --red: #ef4444;
+      --red-dim: #7f1d1d;
+      --orange: #f97316;
+      --yellow: #eab308;
+      --yellow-dim: #713f12;
+      --green: #22c55e;
+    }
+
+    html, body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      font-size: 15px;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .container {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+
+    /* Header */
+    header {
+      border-bottom: 1px solid var(--border);
+      padding: 32px 0 24px;
+      margin-bottom: 32px;
+    }
+
+    .header-top {
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+      margin-bottom: 6px;
+    }
+
+    .site-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--accent);
+      opacity: 0.8;
+    }
+
+    h1 {
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+
+    .tagline {
+      font-size: 16px;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    .sub {
+      font-size: 13px;
+      color: var(--text-dim);
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 28px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 4px;
+    }
+
+    .tab {
+      flex: 1;
+      padding: 9px 16px;
+      background: transparent;
+      border: none;
+      border-radius: 6px;
+      color: var(--text-muted);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+      text-align: center;
+    }
+
+    .tab:hover {
+      color: var(--text);
+      background: var(--surface2);
+    }
+
+    .tab.active {
+      background: var(--surface2);
+      color: var(--text);
+      border: 1px solid var(--border2);
+    }
+
+    /* Search panel */
+    #search-panel { display: none; }
+    #search-panel.visible { display: block; }
+    #recent-panel { display: block; }
+    #recent-panel.hidden { display: none; }
+
+    .search-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 24px;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px 14px;
+      color: var(--text);
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    input[type="text"]::placeholder { color: var(--text-dim); }
+
+    input[type="text"]:focus {
+      border-color: var(--accent);
+    }
+
+    button.search-btn {
+      background: var(--accent);
+      color: #000;
+      border: none;
+      border-radius: 6px;
+      padding: 10px 20px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+      white-space: nowrap;
+    }
+
+    button.search-btn:hover { background: #fb923c; }
+    button.search-btn:disabled { background: var(--text-dim); cursor: not-allowed; }
+
+    /* States */
+    .loading {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--text-muted);
+      font-size: 14px;
+      padding: 40px 0;
+      justify-content: center;
+    }
+
+    .spinner {
+      width: 18px;
+      height: 18px;
+      border: 2px solid var(--border2);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-dim);
+    }
+
+    .empty-state .icon {
+      font-size: 36px;
+      margin-bottom: 12px;
+      opacity: 0.4;
+    }
+
+    .empty-state p {
+      font-size: 14px;
+      line-height: 1.7;
+    }
+
+    .error-state {
+      background: #1a0f0f;
+      border: 1px solid #3d1515;
+      border-radius: 8px;
+      padding: 20px;
+      color: #fca5a5;
+      font-size: 14px;
+    }
+
+    /* Results header */
+    .results-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .results-count {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .results-count strong {
+      color: var(--text);
+    }
+
+    /* Recall cards */
+    .recall-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .recall-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px 20px;
+      border-left: 3px solid var(--border);
+      transition: border-color 0.15s;
+    }
+
+    .recall-card:hover {
+      border-color: var(--border2);
+    }
+
+    .recall-card.class-1 {
+      border-left-color: var(--red);
+      background: #130e0e;
+    }
+
+    .recall-card.class-2 {
+      border-left-color: var(--orange);
+    }
+
+    .recall-card.class-3 {
+      border-left-color: var(--yellow);
+    }
+
+    .card-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .card-titles {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .product-name {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 3px;
+      line-height: 1.4;
+    }
+
+    .recall-card.class-1 .product-name {
+      font-size: 16px;
+    }
+
+    .company-name {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    /* Badges */
+    .badges {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 5px;
+      flex-shrink: 0;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+
+    .badge-class-1 {
+      background: rgba(239, 68, 68, 0.15);
+      color: #fca5a5;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    .badge-class-2 {
+      background: rgba(249, 115, 22, 0.12);
+      color: #fdba74;
+      border: 1px solid rgba(249, 115, 22, 0.25);
+    }
+
+    .badge-class-3 {
+      background: rgba(234, 179, 8, 0.1);
+      color: #fde047;
+      border: 1px solid rgba(234, 179, 8, 0.2);
+    }
+
+    .badge-ongoing {
+      background: rgba(239, 68, 68, 0.1);
+      color: #fca5a5;
+      border: 1px solid rgba(239, 68, 68, 0.2);
+    }
+
+    .badge-completed {
+      background: rgba(90, 80, 74, 0.2);
+      color: var(--text-dim);
+      border: 1px solid var(--border);
+    }
+
+    .badge-terminated {
+      background: rgba(90, 80, 74, 0.2);
+      color: var(--text-dim);
+      border: 1px solid var(--border);
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+      display: inline-block;
+    }
+
+    .status-dot.pulse {
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    /* Reason */
+    .reason-block {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 12px 14px;
+      margin: 12px 0;
+    }
+
+    .reason-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 5px;
+    }
+
+    .reason-text {
+      font-size: 14px;
+      color: var(--text);
+      line-height: 1.55;
+    }
+
+    .recall-card.class-1 .reason-block {
+      background: #1a0f0f;
+      border-color: rgba(239, 68, 68, 0.15);
+    }
+
+    /* Meta row */
+    .meta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-top: 10px;
+    }
+
+    .meta-item {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .meta-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+    }
+
+    .meta-value {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .distribution-text {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .distribution-text.nationwide {
+      color: #fca5a5;
+      font-weight: 500;
+    }
+
+    /* Recall number */
+    .recall-number {
+      font-size: 11px;
+      color: var(--text-dim);
+      font-family: 'SF Mono', 'Fira Mono', monospace;
+      margin-top: 12px;
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--border);
+      margin-top: 60px;
+      padding: 28px 0 40px;
+    }
+
+    .footer-data {
+      font-size: 12px;
+      color: var(--text-dim);
+      margin-bottom: 10px;
+    }
+
+    .footer-data a {
+      color: var(--text-dim);
+      text-decoration: underline;
+      text-decoration-color: var(--border2);
+    }
+
+    .disclaimer {
+      font-size: 13px;
+      color: var(--text-muted);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent);
+      border-radius: 6px;
+      padding: 12px 14px;
+      line-height: 1.5;
+    }
+
+    /* Mobile */
+    @media (max-width: 520px) {
+      h1 { font-size: 22px; }
+      .tagline { font-size: 14px; }
+      .card-top { flex-direction: column; }
+      .badges { flex-direction: row; align-items: center; }
+      .meta-row { gap: 10px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="header-top">
+        <span class="site-label">Open Primitive</span>
+      </div>
+      <h1>Food Recalls</h1>
+      <p class="tagline">What the FDA pulled from shelves this week.</p>
+      <p class="sub">The FDA publishes every food recall. This shows you what's active right now.</p>
+    </header>
+
+    <div class="tabs">
+      <button class="tab active" id="tab-recent" onclick="showTab('recent')">Recent recalls</button>
+      <button class="tab" id="tab-search" onclick="showTab('search')">Search a product</button>
+    </div>
+
+    <!-- Recent recalls panel -->
+    <div id="recent-panel">
+      <div id="recent-content">
+        <div class="loading">
+          <div class="spinner"></div>
+          Loading recent recalls...
+        </div>
+      </div>
+    </div>
+
+    <!-- Search panel -->
+    <div id="search-panel">
+      <div class="search-row">
+        <input
+          type="text"
+          id="search-input"
+          placeholder="Product name, brand, or ingredient (e.g. spinach, listeria, salmonella)"
+          autocomplete="off"
+        />
+        <button class="search-btn" id="search-btn" onclick="doSearch()">Search</button>
+      </div>
+      <div id="search-content">
+        <div class="empty-state">
+          <div class="icon">&#x1F50D;</div>
+          <p>Enter a product name or brand above.<br />Results pull directly from the FDA enforcement database.</p>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      <p class="footer-data">
+        Data: <a href="https://www.fda.gov/safety/recalls-market-withdrawals-safety-alerts" target="_blank" rel="noopener">FDA Enforcement Reports</a>
+        &middot; <a href="https://open.fda.gov/apis/food/enforcement/" target="_blank" rel="noopener">openFDA API</a>
+        &middot; <a href="https://www.fda.gov" target="_blank" rel="noopener">fda.gov</a>
+        &middot; Recalls update as FDA publishes them
+      </p>
+      <div class="disclaimer">
+        Check product lot numbers against the recall. When in doubt, don't eat it.
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    // Tab switching
+    function showTab(tab) {
+      const recentPanel = document.getElementById('recent-panel');
+      const searchPanel = document.getElementById('search-panel');
+      const tabRecent = document.getElementById('tab-recent');
+      const tabSearch = document.getElementById('tab-search');
+
+      if (tab === 'recent') {
+        recentPanel.classList.remove('hidden');
+        searchPanel.classList.remove('visible');
+        tabRecent.classList.add('active');
+        tabSearch.classList.remove('active');
+      } else {
+        recentPanel.classList.add('hidden');
+        searchPanel.classList.add('visible');
+        tabSearch.classList.add('active');
+        tabRecent.classList.remove('active');
+        // Focus search input
+        setTimeout(() => document.getElementById('search-input').focus(), 50);
+      }
+    }
+
+    // Enter key on search input
+    document.getElementById('search-input').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') doSearch();
+    });
+
+    // Format date YYYYMMDD -> readable
+    function formatDate(str) {
+      if (!str || str.length < 8) return str || 'Unknown';
+      const y = str.slice(0, 4);
+      const m = str.slice(4, 6);
+      const d = str.slice(6, 8);
+      const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      const mo = months[parseInt(m, 10) - 1] || m;
+      return `${mo} ${parseInt(d, 10)}, ${y}`;
+    }
+
+    // Classification badge
+    function classBadge(cls) {
+      if (!cls) return '';
+      const c = cls.trim();
+      if (c.includes('I') && !c.includes('II') && !c.includes('III')) {
+        return `<span class="badge badge-class-1">Class I</span>`;
+      }
+      if (c.includes('III')) {
+        return `<span class="badge badge-class-3">Class III</span>`;
+      }
+      if (c.includes('II')) {
+        return `<span class="badge badge-class-2">Class II</span>`;
+      }
+      return `<span class="badge badge-class-2">${c}</span>`;
+    }
+
+    // Class CSS key
+    function classKey(cls) {
+      if (!cls) return '';
+      if (cls.includes('Class I') && !cls.includes('Class II') && !cls.includes('Class III')) return 'class-1';
+      if (cls.includes('Class III')) return 'class-3';
+      if (cls.includes('Class II')) return 'class-2';
+      return '';
+    }
+
+    // Status badge
+    function statusBadge(status) {
+      if (!status) return '';
+      const s = status.trim();
+      if (s === 'Ongoing') {
+        return `<span class="badge badge-ongoing"><span class="status-dot pulse"></span>Ongoing</span>`;
+      }
+      if (s === 'Completed') {
+        return `<span class="badge badge-completed">Completed</span>`;
+      }
+      return `<span class="badge badge-terminated">${s}</span>`;
+    }
+
+    // Distribution display
+    function distributionDisplay(dist) {
+      if (!dist) return '<span class="distribution-text">Unknown</span>';
+      const lower = dist.toLowerCase();
+      if (lower.includes('nationwide') || lower.includes('national') || lower.includes('united states')) {
+        return `<span class="distribution-text nationwide">Nationwide</span>`;
+      }
+      // Truncate long distributions
+      const display = dist.length > 80 ? dist.slice(0, 80) + '...' : dist;
+      return `<span class="distribution-text">${escHtml(display)}</span>`;
+    }
+
+    // Escape HTML
+    function escHtml(str) {
+      if (!str) return '';
+      return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    // Render a single recall card
+    function renderCard(r) {
+      const ck = classKey(r.classification || '');
+      return `
+        <div class="recall-card ${ck}">
+          <div class="card-top">
+            <div class="card-titles">
+              <div class="product-name">${escHtml(r.product_description || 'Unknown product')}</div>
+              <div class="company-name">${escHtml(r.recalling_firm || '')}</div>
+            </div>
+            <div class="badges">
+              ${classBadge(r.classification)}
+              ${statusBadge(r.status)}
+            </div>
+          </div>
+
+          ${r.reason_for_recall ? `
+          <div class="reason-block">
+            <div class="reason-label">Reason for recall</div>
+            <div class="reason-text">${escHtml(r.reason_for_recall)}</div>
+          </div>` : ''}
+
+          <div class="meta-row">
+            <div class="meta-item">
+              <span class="meta-label">Distribution</span>
+              ${distributionDisplay(r.distribution_pattern)}
+            </div>
+            <div class="meta-item">
+              <span class="meta-label">Date initiated</span>
+              <span class="meta-value">${formatDate(r.recall_initiation_date)}</span>
+            </div>
+            ${r.product_quantity ? `
+            <div class="meta-item">
+              <span class="meta-label">Quantity</span>
+              <span class="meta-value">${escHtml(r.product_quantity)}</span>
+            </div>` : ''}
+          </div>
+
+          ${r.recall_number ? `<div class="recall-number">${escHtml(r.recall_number)}</div>` : ''}
+        </div>
+      `;
+    }
+
+    // Render results list
+    function renderResults(data, container, emptyMessage) {
+      if (!data.results || data.results.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="icon">&#x2705;</div>
+            <p>${emptyMessage}</p>
+          </div>
+        `;
+        return;
+      }
+
+      const countLabel = data.query
+        ? `Showing <strong>${data.results.length}</strong> recalls matching "${escHtml(data.query)}"`
+        : `Showing <strong>${data.results.length}</strong> active recalls from the last 90 days`;
+
+      container.innerHTML = `
+        <div class="results-header">
+          <span class="results-count">${countLabel}</span>
+        </div>
+        <div class="recall-list">
+          ${data.results.map(renderCard).join('')}
+        </div>
+      `;
+    }
+
+    // Load recent recalls
+    async function loadRecent() {
+      const container = document.getElementById('recent-content');
+      container.innerHTML = `<div class="loading"><div class="spinner"></div>Loading recent recalls...</div>`;
+
+      try {
+        const res = await fetch('/api/recalls');
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        renderResults(data, container, 'No active recalls found in the last 90 days.');
+      } catch (err) {
+        container.innerHTML = `
+          <div class="error-state">
+            Failed to load recalls. The FDA API may be temporarily unavailable.<br />
+            <small style="opacity:0.7">Error: ${escHtml(err.message)}</small>
+          </div>
+        `;
+      }
+    }
+
+    // Search
+    async function doSearch() {
+      const q = document.getElementById('search-input').value.trim();
+      if (!q) return;
+
+      const container = document.getElementById('search-content');
+      const btn = document.getElementById('search-btn');
+      btn.disabled = true;
+      btn.textContent = 'Searching...';
+      container.innerHTML = `<div class="loading"><div class="spinner"></div>Searching FDA database...</div>`;
+
+      try {
+        const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        renderResults(data, container, `No recalls found matching "${escHtml(q)}". Try a different product name or ingredient.`);
+      } catch (err) {
+        container.innerHTML = `
+          <div class="error-state">
+            Search failed. The FDA API may be temporarily unavailable.<br />
+            <small style="opacity:0.7">Error: ${escHtml(err.message)}</small>
+          </div>
+        `;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Search';
+      }
+    }
+
+    // Load on page open
+    loadRecent();
+  </script>
+</body>
+</html>
