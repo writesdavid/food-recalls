@@ -132,6 +132,19 @@
       .card-badges { flex-direction: row; align-items: center; }
       .meta-row { gap: 10px; }
     }
+
+    @keyframes card-pin {
+      0%   { opacity: 0; transform: translateY(-8px) scale(0.97); }
+      60%  { transform: translateY(2px) scale(1.01); }
+      100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .card-pin-anim { animation: card-pin 0.35s ease-out both; }
+
+    @keyframes badge-flash {
+      0%,100% { opacity: 1; }
+      40% { opacity: 0.3; }
+    }
+    .badge-flash { animation: badge-flash 0.6s ease-out 0.4s; }
   </style>
 </head>
 <body>
@@ -269,7 +282,7 @@
       if (!status) return '';
       const s = status.trim();
       if (s === 'Ongoing') {
-        return `<span class="op-badge danger"><span class="op-pulse"></span>Ongoing</span>`;
+        return `<span class="op-badge danger badge-flash"><span class="op-pulse"></span>Ongoing</span>`;
       }
       if (s === 'Completed') {
         return `<span class="op-badge dim">Completed</span>`;
@@ -300,10 +313,10 @@
     }
 
     // Render a single recall card
-    function renderCard(r) {
+    function renderCard(r, i = 0) {
       const ck = classKey(r.classification || '');
       return `
-        <div class="op-card ${ck}">
+        <div class="op-card ${ck} card-pin-anim" style="animation-delay:${i * 60}ms">
           <div class="card-top">
             <div class="card-titles">
               <div class="product-name">${escHtml(r.product_description || 'Unknown product')}</div>
@@ -360,7 +373,7 @@
       container.innerHTML = `
         <div class="results-count">${countLabel}</div>
         <div class="recall-list">
-          ${data.results.map(renderCard).join('')}
+          ${data.results.map((r, i) => renderCard(r, i)).join('')}
         </div>
       `;
     }
