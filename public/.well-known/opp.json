@@ -1,0 +1,33 @@
+{
+  "opp_version": "0.1",
+  "name": "Food Recalls",
+  "description": "FDA food enforcement and recall data. Mandatory federal reporting on active recalls, market withdrawals, and safety alerts.",
+  "source_url": "https://api.fda.gov",
+  "license": "US Government Public Domain",
+  "methodology": "mandatory-federal-reporting",
+  "endpoints": [
+    {
+      "path": "/api/recalls",
+      "method": "GET",
+      "description": "Recent active food recalls from the last 90 days",
+      "parameters": []
+    },
+    {
+      "path": "/api/search",
+      "method": "GET",
+      "description": "Search food recalls by product or brand name",
+      "parameters": [
+        {
+          "name": "q",
+          "required": true,
+          "description": "Search term for product description or recalling firm"
+        }
+      ]
+    }
+  ],
+  "confidence": {
+    "completeness": 0.90,
+    "note": "FDA enforcement is mandatory. Voluntary recalls may be delayed."
+  },
+  "contact": "https://openprimitive.com"
+}
